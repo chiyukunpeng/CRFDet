@@ -23,6 +23,24 @@ def paint(semantic, projected_points, points):
             semantic (list[list[int]]): seg map [900, 1600]
             projected_points (list[list[int]]): projected radar point clouds [N, 3]
             points (list[list[float]]): radar points [N, 18]
+                [0]: x
+                [1]: y
+                [2]: z
+                [3]: dyn_drop
+                [4]: id
+                [5]: rcs
+                [6]: vx
+                [7]: vy
+                [8]: vx_comp
+                [9]: vy_comp
+                [10]: is_quality_valid
+                [11]: ambig_state
+                [12]: x_rms
+                [13]: y_rms
+                [14]: invalid_state
+                [15]: pdh0
+                [16]: vx_rms
+                [17]: vy_rms
         
         returns:
             painted points (list[list[float]]): [N, 4]
@@ -139,6 +157,97 @@ def show_painted_points(painted_points):
     pcd.colors = o3d.utility.Vector3dVector(colors)
     o3d.visualization.draw_geometries([pcd])
 
+def points2RAMap(points, ramap_width=128, ramap_height=128):
+    '''
+        transform radar points to RAMap
+        
+        args:
+            points (list[list[float]]): radar points [N, 18]
+            ramap_width (int): ramap azimuth size
+            ramap_height (int): ramap range size
+            
+        returns:
+            ramap (ndarray): radar RAMap [W, H, 3] 
+    '''
+    dist = np.sqrt(points[:, 0]**2 + points[:, 1]**2)
+    azimuth = np.arctan2(points[:, 1], points[:, 0])
+    rcs = points[:, 5]
+    
+    ramap_mask = ramapEncoder(azimuth, dist, rcs, ramap_width, ramap_height)
+    ramap = np.zeros((ramap_width, ramap_height, 3), dtype=float)
+    
+    for i in range(len(ramap_mask)):
+        w = int(ramap_mask[i][0])
+        w = w if w < ramap_width else ramap_width - 1
+        h = int(ramap_mask[i][1])
+        h = h if h < ramap_height else ramap_height - 1
+        r = ramap_mask[i][2]
+        g = ramap_mask[i][3]
+        b = ramap_mask[i][4]
+        ramap[w][h][0] = r
+        ramap[w][h][1] = g
+        ramap[w][h][2] = b
+    
+    return ramap
 
+def ramapEncoder(azimuth, distance, rcs, ramap_width, ramap_height):
+    '''
+        encode (azimuth, distance, rcs) to (x, y, rgb)
+        
+        args:
+            azimuth (list[float]): azimuth between radar and object
+            dist (list[float]): range between radar and object
+            rcs (list[float]): radar cross section. rcs in db = 10*log(rcs in m**2)
+            ramap_width (int): ramap azimuth size
+            ramap_height (int): ramap range size
+            
+        returns:
+            ramap_mask (list[list[float]]): ramap mask informations: x, y, r, g, b. [N, 5]
+    '''
+    azimuth = [i + abs(min(azimuth)) for i in azimuth]
+    azimuth_length = max(azimuth) - min(azimuth)
+    azimuth_factor = ramap_width / azimuth_length
+    x = [i * azimuth_factor for i in azimuth]
+    x = np.expand_dims(x, axis=1)
     
+    distance_length = max(distance) - min(distance)
+    distance_factor = ramap_height / distance_length
+    y = [i * distance_factor for i in distance]
+    y = np.expand_dims(y, axis=1)
     
+    rcs = [i + abs(min(rcs)) for i in rcs]
+    rcs_factor = [i / max(rcs) for i in rcs]
+    r = [int(255 * i) for i in rcs_factor]
+    r = np.expand_dims(r, axis=1)
+    g = [0] * len(r)
+    g = np.expand_dims(g, axis=1)
+    b = [0] * len(r)
+    b = np.expand_dims(b, axis=1)
+    
+    ramap_mask = np.hstack((x, y, r, g, b))
+    
+    return ramap_mask
+    
+def show_ramap(ramap, write_ramap, image_path, out_path):
+    '''
+        visualize radar RAMap
+        
+        args:
+            ramap (ndarray): range azimuth map[w, h, 3]
+            write_ramap (bool): whether to write ramap
+            image_path (str): RGB image path
+            out_path (str): ramap save path
+    '''
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(ramap)
+    ax.set_title('RAMap')
+    plt.show()
+    
+    if  write_ramap:
+        ramap_name =   'ramap_' + image_path.split('/')[-1]
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        ramap_path = os.path.join(out_path, ramap_name)
+        plt.savefig(ramap_path)
+        print('-> ramap saved to {}'.format(ramap_path))
+

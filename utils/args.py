@@ -71,6 +71,28 @@ def parser():
         action='store_true',
         help='whether to show painted points'
     )
+    parser.add_argument(
+        '--show_ramap',
+        action='store_true',
+        help='whether to show ramap'
+    )
+    parser.add_argument(
+        '--write_ramap',
+        action='store_true',
+        help='whether to write ramap'
+    )
+    parser.add_argument(
+        '--ramap_width',
+        type=int,
+        default=128,
+        help='ramap width'
+    )
+    parser.add_argument(
+        '--ramap_height',
+        type=int,
+        default=128,
+        help='ramap height'
+    )
     
     args = parser.parse_args()
     return args

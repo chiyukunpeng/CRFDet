@@ -31,6 +31,9 @@ def main():
     pc_data = nusc.get('sample_data', sample['data']['RADAR_FRONT'])
     pc_path = os.path.join(args.dataset, pc_data['filename'])
     points = RadarPointCloud.from_file(pc_path).points
+    ramap = points2RAMap(points.T, args.ramap_width, args.ramap_height)
+    if args.show_ramap:
+        show_ramap(ramap, args.write_ramap, image_path, args.out_path)
 
     print('\n### semantic map inference ###')
     model = init_segmentor(args.seg_config, args.seg_checkpoint, device=args.device)
