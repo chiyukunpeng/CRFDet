@@ -284,7 +284,7 @@ def map_points_to_ramap(ramap, points):
         ramap[w][h][1] = c[1]
         ramap[w][h][2] = c[2]
     
-    painted_ramap = ramap
+    painted_ramap = ramap.astype(np.int32)
     
     return painted_ramap
         
