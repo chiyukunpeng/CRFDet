@@ -251,3 +251,65 @@ def show_ramap(ramap, write_ramap, image_path, out_path):
         plt.savefig(ramap_path)
         print('-> ramap saved to {}'.format(ramap_path))
 
+def map_points_to_ramap(ramap, points):
+    '''
+        map painted points to ramap
+        
+        args:
+            ramap (ndarray): range azimuth map [w, h, 3]
+            points (list[list[float]]): painted points [N, 4]
+            
+        returns:
+            painted_ramap (ndarray): ramap with painted points
+    '''
+    azimuth = np.arctan2(points[:, 1], points[:, 0])
+    azimuth = [i + abs(min(azimuth)) for i in azimuth]
+    azimuth_length = max(azimuth) - min(azimuth)
+    azimuth_factor = ramap.shape[0] / azimuth_length
+    x = [i * azimuth_factor for i in azimuth]
+    x = np.expand_dims(x, axis=1)
+    
+    distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2)
+    distance_length = max(distance) - min(distance)
+    distance_factor = ramap.shape[1] / distance_length
+    y = [i * distance_factor for i in distance]
+    y = np.expand_dims(y, axis=1)
+    
+    for i in range(len(points)):
+        w = int(x[i]) if int(x[i]) < ramap.shape[0] else ramap.shape[0] - 1
+        h = int(y[i]) if int(y[i]) < ramap.shape[1] else ramap.shape[1] - 1
+        c = PALETTE[int(points[i][3])]
+        
+        ramap[w][h][0] = c[0]
+        ramap[w][h][1] = c[1]
+        ramap[w][h][2] = c[2]
+    
+    painted_ramap = ramap
+    
+    return painted_ramap
+        
+def show_painted_ramap(painted_ramap, write_painted_ramap, image_path, out_path):
+    '''
+    show painted ramap
+
+    args:
+        painted_ramap (ndarray): painted range azimuth map [w, h, 3]
+        write_painted_ramap (bool): whether to write painted ramap.
+        image_path (str): image path
+        out_path (str): painted ramap save path
+    '''
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(painted_ramap)
+    ax.set_title('painted ramap')
+    plt.show()
+
+    if write_painted_ramap:
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        painted_ramap_name = 'painted_ramap_' + image_path.split('/')[-1]
+        painted_ramap_path = os.path.join(out_path, painted_ramap_name)
+        plt.savefig(painted_ramap_path)
+        print('-> painted ramap saved to {}'.format(painted_ramap_path))
+    
+        
+    

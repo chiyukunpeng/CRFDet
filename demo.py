@@ -77,8 +77,19 @@ def main():
     if args.show_painted_points:
         show_painted_points(painted_points)
     
-    ###TODO: painted points to RAMap && radar-based detector
+    print('\n### map painted points to ramap ###')
+    init_time = time.time()
+    painted_ramap = map_points_to_ramap(ramap, painted_points)
+    painted_ramap_time  = time.time() - init_time
+    print('-> paint ramap time:{}'.format(painted_ramap_time))
     
+    # show painted ramap
+    if args.show_painted_ramap:
+        show_painted_ramap(
+            painted_ramap, 
+            args.write_painted_ramap, 
+            image_path, 
+            args.out_path)
     
 
 if __name__ == '__main__':
