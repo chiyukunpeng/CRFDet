@@ -188,7 +188,6 @@ def points2RAMap(points, ramap_width=128, ramap_height=128):
         ramap[w][h][1] = g
         ramap[w][h][2] = b
     
-    
     return ramap
 
 def ramapEncoder(azimuth, distance, rcs, ramap_width, ramap_height):
