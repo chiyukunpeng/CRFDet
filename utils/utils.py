@@ -174,7 +174,7 @@ def points2RAMap(points, ramap_width=128, ramap_height=128):
     rcs = points[:, 5]
     
     ramap_mask = ramapEncoder(azimuth, dist, rcs, ramap_width, ramap_height)
-    ramap = np.zeros((ramap_width, ramap_height, 3), dtype=float)
+    ramap = np.zeros((ramap_width, ramap_height, 3), dtype=np.int32)
     
     for i in range(len(ramap_mask)):
         w = int(ramap_mask[i][0])
@@ -187,6 +187,7 @@ def points2RAMap(points, ramap_width=128, ramap_height=128):
         ramap[w][h][0] = r
         ramap[w][h][1] = g
         ramap[w][h][2] = b
+    
     
     return ramap
 

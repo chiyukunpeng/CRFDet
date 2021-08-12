@@ -90,6 +90,11 @@ def main():
             args.write_painted_ramap, 
             image_path, 
             args.out_path)
+        
+    # TODO: ramap-based detector
+    
+    
+    
     
 
 if __name__ == '__main__':
