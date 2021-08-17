@@ -16,6 +16,15 @@ from utils.utils import *
 from utils.args import parser
 
 
+radar_params = {
+    'max_range':250,
+    'range_res':1,
+    'freq':77e9,
+    'num_range':128,
+    'num_doppler':128
+}
+
+
 def main():
     args = parser()
 
@@ -31,9 +40,10 @@ def main():
     pc_data = nusc.get('sample_data', sample['data']['RADAR_FRONT'])
     pc_path = os.path.join(args.dataset, pc_data['filename'])
     points = RadarPointCloud.from_file(pc_path).points
-    ramap = points2RAMap(points.T, args.ramap_width, args.ramap_height)
-    if args.show_ramap:
-        show_ramap(ramap, args.write_ramap, image_path, args.out_path)
+    rdmap = point2rdmap(points.T, radar_params)
+    # ramap = points2RAMap(points.T, args.ramap_width, args.ramap_height)
+    # if args.show_ramap:
+    #     show_ramap(ramap, args.write_ramap, image_path, args.out_path)
 
     print('\n### semantic map inference ###')
     model = init_segmentor(args.seg_config, args.seg_checkpoint, device=args.device)
@@ -48,7 +58,7 @@ def main():
             image_path, 
             semantic,
             args.write_semantic,
-            args.out_path)
+            args.out_path)  
     
     print('\n### project radar points onto the image ###')
     init_time = time.time()

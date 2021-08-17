@@ -5,8 +5,10 @@
 import cv2
 import os
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 import open3d as o3d
+from numpy.lib.scimath import log10
 
 
 PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
@@ -311,5 +313,54 @@ def show_painted_ramap(painted_ramap, write_painted_ramap, image_path, out_path)
         plt.savefig(painted_ramap_path)
         print('-> painted ramap saved to {}'.format(painted_ramap_path))
     
+def point2rdmap(points, radar_param):
+    '''
+        transform points to range doppler map
+
+        args:
+            points (list[list[float]]): radar points [N, 18]
+            radar_param (dict): radar parameters
         
+        returns:
+            rdmap (list[list[float]]): range doppler map [W, H, 3]
+    '''
+    distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2)
+    velocity = np.sqrt(points[:, 8]**2 + points[:, 9]**2)
+
+    bandwidth = 3e8/(2*radar_param['range_res'])
+    t_chirp = 5.5*2*radar_param['max_range']/3e8
+    slope = bandwidth/t_chirp
+
+    total_time = np.linspace(0, 
+                            radar_param['num_doppler']*t_chirp,
+                            radar_param['num_range']*radar_param['num_doppler'])
+    t_x = np.zeros((len(points), len(total_time)))
+    r_x = np.zeros((len(points), len(total_time)))
+    mix = np.zeros((len(points), len(total_time)))
+    r_t = np.zeros((len(points), len(total_time)))
+    t_d = np.zeros((len(points), len(total_time)))
     
+    for i in range(len(points)):
+        for j in range(len(total_time)):
+            r_t[i][j] = distance[i] + velocity[i]*total_time[j]
+            t_d[i][j] = 2*r_t[i][j]/3e8
+
+            t_x[i][j] = math.cos(2*math.pi*(radar_param['freq'])*total_time[j] + \
+                                slope*((total_time[j]**2)/2))
+            r_x[i][j] = math.cos(2*math.pi*(radar_param['freq'])*(total_time[j]-t_d[i][j])) + \
+                                slope*(((total_time[j]-t_d[i][j])**2)/2)
+            mix[i][j] = np.dot(t_x[i][j], r_x[i][j])
+    
+    mix = np.sum(mix, axis=0)
+    mix = np.expand_dims(mix, axis=0)
+    reshaped_mix = mix.reshape((radar_param['num_doppler'], radar_param['num_range']))
+    sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
+    sig_fft2 = np.fft.fftshift(sig_fft2)
+    mask = 10*log10(np.abs(sig_fft2))
+    mask /= np.max(mask)
+    rdmap = np.zeros((radar_param['num_doppler'], radar_param['num_range'], 3))
+    rdmap[:, :, 0] = mask
+    
+    return rdmap
+
+
