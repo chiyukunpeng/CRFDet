@@ -351,16 +351,68 @@ def point2rdmap(points, radar_param):
                                 slope*(((total_time[j]-t_d[i][j])**2)/2)
             mix[i][j] = np.dot(t_x[i][j], r_x[i][j])
     
-    mix = np.sum(mix, axis=0)
+    # mix = np.sum(mix, axis=0)
+    # mix = np.max(mix, axis=0)
+    mix = np.mean(mix, axis=0)
     mix = np.expand_dims(mix, axis=0)
     reshaped_mix = mix.reshape((radar_param['num_doppler'], radar_param['num_range']))
     sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
     sig_fft2 = np.fft.fftshift(sig_fft2)
     mask = 10*log10(np.abs(sig_fft2))
     mask /= np.max(mask)
-    rdmap = np.zeros((radar_param['num_doppler'], radar_param['num_range'], 3))
-    rdmap[:, :, 0] = mask
+    # mask = cfar(mask, radar_param['num_range'], radar_param['num_doppler'])
+    mask = (255*mask).astype(np.int32)
+    rdmap = np.zeros((radar_param['num_doppler'], radar_param['num_range'], 3), dtype=np.int32)
+    rdmap[:, :, 2] = mask
     
     return rdmap
 
+def cfar(mask, num_range=128, num_doppler=128, num_train=8, num_guard=4):
+    '''
+    detect peaks with 2D CFAR algorithm.
+    
+    args:
+        mask (list[list[float]]): rdmap mask.
+        num_range (int): number of range
+        num_doppler (int): number of doppler
+        num_train (int): number of training cells.
+        num_guard (int): number of guard cells.
+        
+    returns:
+        mask (list[list[float]]): rdmap mask after cfar
+    '''
+    for i in range(num_train+num_guard+1, num_range-num_train-num_guard):
+        for j in range(num_train+num_guard+1, num_doppler-num_train-num_guard):
+            noise = np.zeros((1,1))
+            for p in range(i-num_train-num_guard, i+num_train+num_guard):
+                for q in range(j-num_train-num_guard, j+num_train+num_guard):
+                    if abs(i-p) > num_guard or abs(j-q) > num_guard:
+                        noise += 10**(mask[p][q]/10)
+            threshold = 10*log10(noise/(4*(num_train+num_guard+1)**2-num_guard**2-1))
+            mask[i][j] = 0 if mask[i][j] < threshold else 1
+    
+    return mask
+
+def show_rdmap(rdmap, write_rdmap, image_path, out_path):
+    '''
+        visualize radar RDMap
+        
+        args:
+            rdmap (ndarray): range doppler map[w, h, 3]
+            write_rdmap (bool): whether to write rdmap
+            image_path (str): RGB image path
+            out_path (str): rdmap save path
+    '''
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(rdmap)
+    ax.set_title('RDMap')
+    plt.show()
+    
+    if  write_rdmap:
+        rdmap_name =   'rdmap_' + image_path.split('/')[-1]
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        rdmap_path = os.path.join(out_path, rdmap_name)
+        plt.savefig(rdmap_path)
+        print('-> rdmap saved to {}'.format(rdmap_path))
 

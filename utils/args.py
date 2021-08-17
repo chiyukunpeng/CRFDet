@@ -103,7 +103,16 @@ def parser():
         action='store_true',
         help='whether to write painted ramap'
     )
-    
+    parser.add_argument(
+        '--show_rdmap',
+        action='store_true',
+        help='whether to show rdmap'
+    )
+    parser.add_argument(
+        '--write_rdmap',
+        action='store_true',
+        help='whether to write rdmap'
+    )
     
     args = parser.parse_args()
     return args

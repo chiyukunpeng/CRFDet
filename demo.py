@@ -41,9 +41,8 @@ def main():
     pc_path = os.path.join(args.dataset, pc_data['filename'])
     points = RadarPointCloud.from_file(pc_path).points
     rdmap = point2rdmap(points.T, radar_params)
-    # ramap = points2RAMap(points.T, args.ramap_width, args.ramap_height)
-    # if args.show_ramap:
-    #     show_ramap(ramap, args.write_ramap, image_path, args.out_path)
+    if args.show_rdmap:
+        show_rdmap(rdmap, args.write_rdmap, image_path, args.out_path)
 
     print('\n### semantic map inference ###')
     model = init_segmentor(args.seg_config, args.seg_checkpoint, device=args.device)
@@ -87,19 +86,19 @@ def main():
     if args.show_painted_points:
         show_painted_points(painted_points)
     
-    print('\n### map painted points to ramap ###')
-    init_time = time.time()
-    painted_ramap = map_points_to_ramap(ramap, painted_points)
-    painted_ramap_time  = time.time() - init_time
-    print('-> paint ramap time:{}'.format(painted_ramap_time))
+    # print('\n### map painted points to ramap ###')
+    # init_time = time.time()
+    # painted_ramap = map_points_to_ramap(ramap, painted_points)
+    # painted_ramap_time  = time.time() - init_time
+    # print('-> paint ramap time:{}'.format(painted_ramap_time))
     
-    # show painted ramap
-    if args.show_painted_ramap:
-        show_painted_ramap(
-            painted_ramap, 
-            args.write_painted_ramap, 
-            image_path, 
-            args.out_path)
+    # # show painted ramap
+    # if args.show_painted_ramap:
+    #     show_painted_ramap(
+    #         painted_ramap, 
+    #         args.write_painted_ramap, 
+    #         image_path, 
+    #         args.out_path)
         
     # TODO: ramap-based detector
     
