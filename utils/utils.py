@@ -416,3 +416,18 @@ def show_rdmap(rdmap, write_rdmap, image_path, out_path):
         plt.savefig(rdmap_path)
         print('-> rdmap saved to {}'.format(rdmap_path))
 
+def map_points_to_rdmap(points, rdmap):
+    '''
+        map painted points to rdmap
+        
+        args:
+            points (list[list[float]]): painted points [N, 4]
+            rdmap (ndarray): range doppler map [w, h, 3]
+            
+        returns:
+            mapped_rdmap (ndarray): mapped rdmap [w, h, 3]
+    '''
+    distance = np.sqrt(points[:, 0]**2 + points[:, 1])
+    distance = np.expand_dims(distance, axis=0)
+    pass
+    
