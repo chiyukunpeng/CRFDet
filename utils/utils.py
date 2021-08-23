@@ -45,11 +45,11 @@ def paint(semantic, projected_points, points):
                 [17]: vy_rms
         
         returns:
-            painted points (list[list[float]]): [N, 4]
+            painted points (list[list[float]]): [N, 19]
     '''
     semantic_channel = semantic[projected_points[:, 1], projected_points[:, 0]].reshape(-1, 1)
     assert len(semantic_channel) == len(points)
-    painted_points = np.hstack((points[:, :3], semantic_channel))
+    painted_points = np.hstack((points, semantic_channel))
     
     return painted_points
 
@@ -139,7 +139,7 @@ def show_painted_points(painted_points):
         show painted radar points in 3D world
         
         args:
-            painted_points (list[list[float]]): painted radar points. [N, 4]
+            painted_points (list[list[float]]): painted radar points. [N, 19]
     '''
     visualizer = o3d.visualization.Visualizer()
     visualizer.create_window(width=1280, height=720)
@@ -164,7 +164,7 @@ def points2RAMap(points, ramap_width=128, ramap_height=128):
         transform radar points to RAMap
         
         args:
-            points (list[list[float]]): radar points [N, 18]
+            points (list[list[float]]): radar points [N, 19]
             ramap_width (int): ramap azimuth size
             ramap_height (int): ramap range size
             
@@ -259,7 +259,7 @@ def map_points_to_ramap(ramap, points):
         
         args:
             ramap (ndarray): range azimuth map [w, h, 3]
-            points (list[list[float]]): painted points [N, 4]
+            points (list[list[float]]): painted points [N, 19]
             
         returns:
             painted_ramap (ndarray): ramap with painted points
@@ -339,6 +339,7 @@ def point2rdmap(points, radar_param):
     mix = np.zeros((len(points), len(total_time)))
     r_t = np.zeros((len(points), len(total_time)))
     t_d = np.zeros((len(points), len(total_time)))
+    # mask_lst = []
     
     for i in range(len(points)):
         for j in range(len(total_time)):
@@ -350,15 +351,26 @@ def point2rdmap(points, radar_param):
             r_x[i][j] = math.cos(2*math.pi*(radar_param['freq'])*(total_time[j]-t_d[i][j])) + \
                                 slope*(((total_time[j]-t_d[i][j])**2)/2)
             mix[i][j] = np.dot(t_x[i][j], r_x[i][j])
+            
+    #     reshaped_mix = mix[i].reshape((radar_param['num_doppler'], radar_param['num_range']))
+    #     sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
+    #     sig_fft2 = np.fft.fftshift(sig_fft2)
+    #     mask = 10*np.log(np.abs(sig_fft2))
+    #     mask /= np.max(mask)
+    #     mask_lst.append(mask)    
+    # mask = np.max(np.array(mask_lst),axis=0)
     
     # mix = np.sum(mix, axis=0)
-    # mix = np.max(mix, axis=0)
-    mix = np.mean(mix, axis=0)
+    mix = np.max(mix, axis=0)
+    # mix = np.mean(mix, axis=0)
     mix = np.expand_dims(mix, axis=0)
     reshaped_mix = mix.reshape((radar_param['num_doppler'], radar_param['num_range']))
     sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
     sig_fft2 = np.fft.fftshift(sig_fft2)
-    mask = 10*log10(np.abs(sig_fft2))
+    mask = 10*np.log(np.abs(sig_fft2))
+    # plt.figure()
+    # plt.imshow(mask)
+    # plt.show()
     mask /= np.max(mask)
     # mask = cfar(mask, radar_param['num_range'], radar_param['num_doppler'])
     mask = (255*mask).astype(np.int32)
@@ -421,13 +433,16 @@ def map_points_to_rdmap(points, rdmap):
         map painted points to rdmap
         
         args:
-            points (list[list[float]]): painted points [N, 4]
+            points (list[list[float]]): painted points [N, 19]
             rdmap (ndarray): range doppler map [w, h, 3]
             
         returns:
             mapped_rdmap (ndarray): mapped rdmap [w, h, 3]
     '''
-    distance = np.sqrt(points[:, 0]**2 + points[:, 1])
+    distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2)
     distance = np.expand_dims(distance, axis=0)
-    pass
     
+    velocity = np.sqrt(points[:, 8]**2 + points[:, 9]**2)
+    velocity = np.expand_dims(velocity, axis=0)
+    
+    distance = 

@@ -86,19 +86,19 @@ def main():
     if args.show_painted_points:
         show_painted_points(painted_points)
     
-    # print('\n### map painted points to ramap ###')
-    # init_time = time.time()
-    # painted_ramap = map_points_to_ramap(ramap, painted_points)
-    # painted_ramap_time  = time.time() - init_time
-    # print('-> paint ramap time:{}'.format(painted_ramap_time))
+    print('\n### map painted points to rdmap ###')
+    init_time = time.time()
+    painted_rdmap = map_points_to_rdmap(painted_points, rdmap)
+    painted_rdmap_time  = time.time() - init_time
+    print('-> paint ramap time:{}'.format(painted_rdmap_time))
     
-    # # show painted ramap
-    # if args.show_painted_ramap:
-    #     show_painted_ramap(
-    #         painted_ramap, 
-    #         args.write_painted_ramap, 
-    #         image_path, 
-    #         args.out_path)
+    # show painted rdmap
+    if args.show_painted_rdmap:
+        show_painted_rdmap(
+            painted_rdmap, 
+            args.write_painted_rdmap, 
+            image_path, 
+            args.out_path)
         
     # TODO: ramap-based detector
     

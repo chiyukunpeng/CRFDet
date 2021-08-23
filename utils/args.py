@@ -63,7 +63,7 @@ def parser():
     parser.add_argument(
         '--nusc_scene',
         type=int,
-        default=0,
+        default=5,
         help='nuscenes mini dataset scene number, in [0, 9]'
     )
     parser.add_argument(
