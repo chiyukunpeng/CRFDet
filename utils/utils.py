@@ -339,7 +339,6 @@ def point2rdmap(points, radar_param):
     mix = np.zeros((len(points), len(total_time)))
     r_t = np.zeros((len(points), len(total_time)))
     t_d = np.zeros((len(points), len(total_time)))
-    # mask_lst = []
     
     for i in range(len(points)):
         for j in range(len(total_time)):
@@ -351,14 +350,6 @@ def point2rdmap(points, radar_param):
             r_x[i][j] = math.cos(2*math.pi*(radar_param['freq'])*(total_time[j]-t_d[i][j])) + \
                                 slope*(((total_time[j]-t_d[i][j])**2)/2)
             mix[i][j] = np.dot(t_x[i][j], r_x[i][j])
-            
-    #     reshaped_mix = mix[i].reshape((radar_param['num_doppler'], radar_param['num_range']))
-    #     sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
-    #     sig_fft2 = np.fft.fftshift(sig_fft2)
-    #     mask = 10*np.log(np.abs(sig_fft2))
-    #     mask /= np.max(mask)
-    #     mask_lst.append(mask)    
-    # mask = np.max(np.array(mask_lst),axis=0)
     
     # mix = np.sum(mix, axis=0)
     mix = np.max(mix, axis=0)
@@ -368,9 +359,6 @@ def point2rdmap(points, radar_param):
     sig_fft2 = np.fft.fft2(reshaped_mix, (radar_param['num_doppler'], radar_param['num_range']))
     sig_fft2 = np.fft.fftshift(sig_fft2)
     mask = 10*np.log(np.abs(sig_fft2))
-    # plt.figure()
-    # plt.imshow(mask)
-    # plt.show()
     mask /= np.max(mask)
     # mask = cfar(mask, radar_param['num_range'], radar_param['num_doppler'])
     mask = (255*mask).astype(np.int32)
@@ -441,22 +429,19 @@ def map_points_to_rdmap(points, rdmap, radar_param):
             mapped_rdmap (ndarray): mapped rdmap [w, h, 3]
     '''
     distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2).astype(np.int32)
-    distance = np.where(rdmap.shape[0]>distance, distance, rdmap.shape[0])
+    distance = np.where(rdmap.shape[0]>distance, distance, rdmap.shape[0]-1)
     distance = np.expand_dims(distance, axis=1)
     
     velocity = np.sqrt(points[:, 8]**2 + points[:, 9]**2)
     doppler = (velocity * radar_param['freq'] / 3e8).astype(np.int32)
-    doppler = np.where(rdmap.shape[1]>doppler, doppler, rdmap.shape[1])
+    doppler = np.where(rdmap.shape[1]>doppler, doppler, rdmap.shape[1]-1)
     doppler = np.expand_dims(doppler, axis=1)
     
     rdmap[:, :, :] = (127, 0, 255)
     for i in range(len(points)):
         w, h = doppler[i], distance[i]
         c = PALETTE[int(points[i][18])]
-        
-        rdmap[w][h][0] = c[0]
-        rdmap[w][h][1] = c[1]
-        rdmap[w][h][2] = c[2]
+        rdmap[w, h, :] = c
     
     return rdmap
 
