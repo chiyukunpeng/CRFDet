@@ -88,7 +88,7 @@ def main():
     
     print('\n### map painted points to rdmap ###')
     init_time = time.time()
-    painted_rdmap = map_points_to_rdmap(painted_points, rdmap)
+    painted_rdmap = map_points_to_rdmap(painted_points, rdmap, radar_params)
     painted_rdmap_time  = time.time() - init_time
     print('-> paint ramap time:{}'.format(painted_rdmap_time))
     
@@ -100,7 +100,7 @@ def main():
             image_path, 
             args.out_path)
         
-    # TODO: ramap-based detector
+    # TODO: rdmap-based detector
     
     
     

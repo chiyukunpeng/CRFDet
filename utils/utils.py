@@ -428,21 +428,58 @@ def show_rdmap(rdmap, write_rdmap, image_path, out_path):
         plt.savefig(rdmap_path)
         print('-> rdmap saved to {}'.format(rdmap_path))
 
-def map_points_to_rdmap(points, rdmap):
+def map_points_to_rdmap(points, rdmap, radar_param):
     '''
         map painted points to rdmap
         
         args:
             points (list[list[float]]): painted points [N, 19]
             rdmap (ndarray): range doppler map [w, h, 3]
+            radar_param (dict): radar parameters
             
         returns:
             mapped_rdmap (ndarray): mapped rdmap [w, h, 3]
     '''
-    distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2)
-    distance = np.expand_dims(distance, axis=0)
+    distance = np.sqrt(points[:, 0]**2 + points[:, 1]**2).astype(np.int32)
+    distance = np.where(rdmap.shape[0]>distance, distance, rdmap.shape[0])
+    distance = np.expand_dims(distance, axis=1)
     
     velocity = np.sqrt(points[:, 8]**2 + points[:, 9]**2)
-    velocity = np.expand_dims(velocity, axis=0)
+    doppler = (velocity * radar_param['freq'] / 3e8).astype(np.int32)
+    doppler = np.where(rdmap.shape[1]>doppler, doppler, rdmap.shape[1])
+    doppler = np.expand_dims(doppler, axis=1)
     
-    distance = 
+    rdmap[:, :, :] = (127, 0, 255)
+    for i in range(len(points)):
+        w, h = doppler[i], distance[i]
+        c = PALETTE[int(points[i][18])]
+        
+        rdmap[w][h][0] = c[0]
+        rdmap[w][h][1] = c[1]
+        rdmap[w][h][2] = c[2]
+    
+    return rdmap
+
+def show_painted_rdmap(painted_rdmap, write_painted_rdmap, image_path, out_path):
+    '''
+    show painted rdmap
+
+    args:
+        painted_rdmap (ndarray): painted range doppler map [w, h, 3]
+        write_painted_rdmap (bool): whether to write painted rdmap.
+        image_path (str): image path
+        out_path (str): painted ramap save path
+    '''
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(painted_rdmap)
+    ax.set_title('painted rdmap')
+    plt.show()
+
+    if write_painted_rdmap:
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        painted_rdmap_name = 'painted_ramap_' + image_path.split('/')[-1]
+        painted_rdmap_path = os.path.join(out_path, painted_rdmap_name)
+        plt.savefig(painted_rdmap_path)
+        print('-> painted rdmap saved to {}'.format(painted_rdmap_path))
+    
